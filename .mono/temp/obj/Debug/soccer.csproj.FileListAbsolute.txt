@@ -1,0 +1,7 @@
+C:\Code\games\soccer\.mono\temp\bin\Debug\soccer.dll
+C:\Code\games\soccer\.mono\temp\bin\Debug\soccer.pdb
+C:\Code\games\soccer\.mono\temp\obj\Debug\soccer.csprojAssemblyReference.cache
+C:\Code\games\soccer\.mono\temp\obj\Debug\soccer.AssemblyInfoInputs.cache
+C:\Code\games\soccer\.mono\temp\obj\Debug\soccer.AssemblyInfo.cs
+C:\Code\games\soccer\.mono\temp\obj\Debug\soccer.dll
+C:\Code\games\soccer\.mono\temp\obj\Debug\soccer.pdb
