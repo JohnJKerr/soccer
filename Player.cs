@@ -8,10 +8,9 @@ public class Player : KinematicBody2D
     private const int Touch = 40;
     private const int MaxKickPower = 1000;
     private Vector2 _movement = Vector2.Zero;
-    private int _kickPower = 0;
+    private int _kickPower;
     private AnimatedSprite AnimatedSprite => GetNode<AnimatedSprite>(nameof(AnimatedSprite));
     private Area2D Legs => GetNode<Area2D>(nameof(Legs));
-    private Timer KickTimer => GetNode<Timer>(nameof(KickTimer));
     private bool IsKicking => IsPressed(Action.Kick);
     private bool CanMove => !IsKicking || !InKickRange;
     private Node2D Pitch => GetTree().Root.GetNode<Node2D>(nameof(Pitch));
