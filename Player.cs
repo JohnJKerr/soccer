@@ -4,13 +4,14 @@ using System;
 public class Player : KinematicBody2D
 {
     private const int Speed = 80;
+    private AnimatedSprite AnimatedSprite => GetNode<AnimatedSprite>(nameof(AnimatedSprite));
     
     public override void _PhysicsProcess(float delta)
     {
         base._PhysicsProcess(delta);
         var movement = GetMovement();
         movement = MoveAndSlide(movement);
-        if (movement != Vector2.Zero) Animate(movement);
+        Animate(movement);
     }
     
     private Vector2 GetMovement()
@@ -30,8 +31,21 @@ public class Player : KinematicBody2D
 
     private void Animate(Vector2 movement)
     {
+        if (!movement.Equals(Vector2.Zero)) Rotate(movement);
+        var animation = GetAnimation(movement);
+        AnimatedSprite.Animation = animation.ToString();
+        AnimatedSprite.Play();
+    }
+
+    private void Rotate(Vector2 movement)
+    {
         Rotation = movement.Angle() + new Vector2(1, 0).Angle();
     }
-    
+
+    private static Animation GetAnimation(Vector2 movement)
+    {
+        return movement.Equals(Vector2.Zero) ? Animation.Default : Animation.Run;
+    }
+
     private static bool IsPressed(Direction input) => Input.IsActionPressed(input.DisplayName);
 }
