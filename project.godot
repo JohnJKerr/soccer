@@ -51,6 +51,12 @@ down={
  ]
 }
 
+[layer_names]
+
+2d_physics/layer_1="Bodies"
+2d_physics/layer_2="Legs"
+2d_physics/layer_3="Ball"
+
 [physics]
 
 2d/default_gravity_vector=Vector2( 0, 0 )

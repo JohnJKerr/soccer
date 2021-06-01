@@ -1,10 +1,13 @@
 using Godot;
 using System;
+using System.Linq;
 
 public class Player : KinematicBody2D
 {
     private const int Speed = 80;
+    private const int Touch = 40;
     private AnimatedSprite AnimatedSprite => GetNode<AnimatedSprite>(nameof(AnimatedSprite));
+    private Area2D Legs => GetNode<Area2D>(nameof(Legs));
     
     public override void _PhysicsProcess(float delta)
     {
@@ -12,6 +15,15 @@ public class Player : KinematicBody2D
         var movement = GetMovement();
         movement = MoveAndSlide(movement);
         Animate(movement);
+        Dribble();
+    }
+
+    private void Dribble()
+    {
+        var ball = Legs.GetOverlappingBodies().OfType<RigidBody2D>().FirstOrDefault();
+        if (ball == default) return;
+        var direction = Position.DirectionTo(ball.Position).Normalized();
+        ball.ApplyCentralImpulse(direction * Touch);
     }
     
     private Vector2 GetMovement()
