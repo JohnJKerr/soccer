@@ -6,58 +6,77 @@ public class Player : KinematicBody2D
 {
     private const int Speed = 80;
     private const int Touch = 40;
+    private const int MaxKickPower = 1000;
+    private Vector2 _movement = Vector2.Zero;
+    private int _kickPower = 0;
     private AnimatedSprite AnimatedSprite => GetNode<AnimatedSprite>(nameof(AnimatedSprite));
     private Area2D Legs => GetNode<Area2D>(nameof(Legs));
+    private Timer KickTimer => GetNode<Timer>(nameof(KickTimer));
+    private bool IsKicking => IsPressed(Action.Kick);
+    private bool CanMove => !IsKicking || !InKickRange;
+    private Node2D Pitch => GetTree().Root.GetNode<Node2D>(nameof(Pitch));
+    private Ball Ball => Pitch.GetNode<Ball>(nameof(Ball));
+    private bool InKickRange => Legs.GetOverlappingBodies().OfType<RigidBody2D>().FirstOrDefault() != default;
     
     public override void _PhysicsProcess(float delta)
     {
         base._PhysicsProcess(delta);
-        var movement = GetMovement();
-        movement = MoveAndSlide(movement);
-        Animate(movement);
-        Dribble();
+        _movement = GetMovement();
+        _movement = MoveAndSlide(_movement);
+        Animate();
+        Kick();
     }
 
-    private void Dribble()
+    private void Kick()
     {
-        var ball = Legs.GetOverlappingBodies().OfType<RigidBody2D>().FirstOrDefault();
-        if (ball == default) return;
-        var direction = Position.DirectionTo(ball.Position).Normalized();
-        ball.ApplyCentralImpulse(direction * Touch);
+        if (!InKickRange) return;
+        _kickPower = Math.Max(Touch, _kickPower);
+        if (IsKicking && _kickPower <= MaxKickPower)
+        {
+            _kickPower += 20;
+            return;
+        }
+        var direction = Position.DirectionTo(Ball.Position).Normalized();
+        Ball.ApplyCentralImpulse(direction * _kickPower);
+        if(Ball.IsStopped) _kickPower = 0;
+    }
+
+    private Vector2 GetDirectionInput()
+    {
+        var vector = Vector2.Zero;
+        if (IsPressed(Direction.Left)) vector.x -= 1;
+        if (IsPressed(Direction.Right)) vector.x += 1;
+        if (IsPressed(Direction.Up)) vector.y -= 1;
+        if (IsPressed(Direction.Down)) vector.y += 1;
+        return vector;
     }
     
     private Vector2 GetMovement()
     {
-        var velocity = Vector2.Zero;
-        if (IsPressed(Direction.Left)) velocity.x -= 1;
-        if (IsPressed(Direction.Right)) velocity.x += 1;
-        if (IsPressed(Direction.Up)) velocity.y -= 1;
-        if (IsPressed(Direction.Down)) velocity.y += 1;
-        var targetX = Position.x + velocity.x;
-        var targetY = Position.y + velocity.y;
-        velocity.x = targetX - Position.x;
-        velocity.y = targetY - Position.y;
-        velocity = velocity.Normalized() * Speed;
-        return velocity;
+        var direction = !CanMove ? Vector2.Zero : GetDirectionInput();
+        direction = direction.Normalized() * Speed;
+        return direction;
     }
 
-    private void Animate(Vector2 movement)
+    private void Animate()
     {
-        if (!movement.Equals(Vector2.Zero)) Rotate(movement);
-        var animation = GetAnimation(movement);
+        if (!_movement.Equals(Vector2.Zero)) Rotate();
+        var animation = GetAnimation();
         AnimatedSprite.Animation = animation.ToString();
         AnimatedSprite.Play();
     }
 
-    private void Rotate(Vector2 movement)
+    private void Rotate()
     {
-        Rotation = movement.Angle() + new Vector2(1, 0).Angle();
+        Rotation = _movement.Angle() + new Vector2(1, 0).Angle();
     }
 
-    private static Animation GetAnimation(Vector2 movement)
+    private Animation GetAnimation()
     {
-        return movement.Equals(Vector2.Zero) ? Animation.Default : Animation.Run;
+        return _movement.Equals(Vector2.Zero) || IsKicking ? Animation.Default : Animation.Run;
     }
 
-    private static bool IsPressed(Direction input) => Input.IsActionPressed(input.DisplayName);
+    private static bool IsPressed(Direction direction) => Input.IsActionPressed(direction.ToString());
+    private static bool IsPressed(Action action) => Input.IsActionPressed(action.ToString());
+    private static bool IsReleased(Action action) => Input.IsActionJustReleased(action.ToString());
 }
