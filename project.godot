@@ -61,6 +61,7 @@ kick={
 2d_physics/layer_1="Bodies"
 2d_physics/layer_2="Legs"
 2d_physics/layer_3="Ball"
+2d_physics/layer_4="Goals"
 
 [physics]
 
