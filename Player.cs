@@ -9,13 +9,12 @@ public class Player : KinematicBody2D
     private const int MaxKickPower = 1000;
     private Vector2 _movement = Vector2.Zero;
     private int _kickPower;
+    private bool _hasPossession;
     private AnimatedSprite AnimatedSprite => GetNode<AnimatedSprite>(nameof(AnimatedSprite));
-    private Area2D Legs => GetNode<Area2D>(nameof(Legs));
+    private bool IsMoving => _movement != Vector2.Zero;
     private bool IsKicking => IsPressed(Action.Kick);
-    private bool CanMove => !IsKicking || !InKickRange;
     private Node2D Pitch => GetTree().Root.GetNode<Node2D>(nameof(Pitch));
     private Ball Ball => Pitch.GetNode<Ball>(nameof(Ball));
-    private bool InKickRange => Legs.GetOverlappingBodies().OfType<RigidBody2D>().FirstOrDefault() != default;
     
     public override void _PhysicsProcess(float delta)
     {
@@ -23,21 +22,59 @@ public class Player : KinematicBody2D
         _movement = GetMovement();
         _movement = MoveAndSlide(_movement);
         Animate();
+        Dribble();
         Kick();
+    }
+
+    public void OnLegsEntered(Node2D body)
+    {
+        if (!(body is Ball ball)) return;
+        GainPossession();
+    }
+
+    public void OnLegsExited(Node2D body)
+    {
+        if (!(body is Ball ball)) return;
+        LosePossession();
+    }
+
+    private void GainPossession()
+    {
+        _hasPossession = true;
+        Ball.Sleeping = true;
+    }
+
+    private void LosePossession()
+    {
+        _hasPossession = false;
+        _kickPower = 0;
+    }
+
+    private void Dribble()
+    {
+        if (!_hasPossession) return;
+        var ballDistance = Position.DistanceTo(Ball.Position);
+        if (_hasPossession && ballDistance > Touch)
+        {
+            var direction = Ball.Position.DirectionTo(Position);
+            Ball.ApplyCentralImpulse(direction * ballDistance);
+        }
+        if(IsMoving) Ball.ApplyCentralImpulse(_movement.Normalized() * Touch);
     }
 
     private void Kick()
     {
-        if (!InKickRange) return;
-        _kickPower = Math.Max(Touch, _kickPower);
-        if (IsKicking && _kickPower <= MaxKickPower)
-        {
-            _kickPower += 20;
-            return;
-        }
+        PowerUpKick();
+        if (!IsReleased(Action.Kick)) return;
         var direction = Position.DirectionTo(Ball.Position).Normalized();
         Ball.ApplyCentralImpulse(direction * _kickPower);
-        if(Ball.IsStopped) _kickPower = 0;
+        _kickPower = 0;
+    }
+
+    private void PowerUpKick()
+    {
+        if (!IsKicking || !_hasPossession) return;
+        _kickPower = Math.Min(MaxKickPower, _kickPower + 20);
     }
 
     private Vector2 GetDirectionInput()
@@ -52,7 +89,7 @@ public class Player : KinematicBody2D
     
     private Vector2 GetMovement()
     {
-        var direction = !CanMove ? Vector2.Zero : GetDirectionInput();
+        var direction = GetDirectionInput();
         direction = direction.Normalized() * Speed;
         return direction;
     }
